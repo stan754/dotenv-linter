@@ -92,6 +92,19 @@ enum Command {
         )]
         files: Vec<PathBuf>,
     },
+    /// Generate a .env file based on a schema
+    Generate {
+        /// Schema file to use for .env generation
+        #[arg(required = true)]
+        schema: PathBuf,
+
+        #[command(flatten)]
+        common: CommonArgs,
+
+        /// Output .env file
+        #[arg(short, long, default_value = ".env")]
+        output: PathBuf,
+    },
 }
 
 #[derive(Args)]
@@ -199,6 +212,43 @@ pub fn run() -> Result<i32> {
 
             if total_warnings == 0 {
                 return Ok(0);
+            }
+        }
+        Command::Generate {
+            schema, 
+            common, 
+            output 
+        } => {
+            let schema = match DotEnvSchema::load(schema) {
+                Ok(s) => s,
+                Err(err) => {
+                    eprintln!("Error loading schema: {err}");
+                    std::process::exit(1);
+                }
+            };
+
+            let mut lines: Vec<dotenv_core::LineEntry> = schema
+                .entries
+                .keys()
+                .enumerate()
+                .map(|(i, key)| dotenv_core::LineEntry {
+                    number: i + 1,
+                    raw_string: format!("{key}="),
+                    is_deleted: false,
+                    is_last_line: false,
+                })
+                .collect();
+
+            if let Some(last) = lines.last_mut() {
+                last.is_last_line = true;
+            }
+
+            let warnings = dotenv_analyzer::check(&lines, &common.ignore_checks, Some(&schema));
+            dotenv_analyzer::fix(&warnings, &mut lines, &common.ignore_checks);
+
+            if let Err(err) = crate::fs_utils::write_file(&output, lines) {
+                eprintln!("Error writing output: {err}");
+                std::process::exit(1);
             }
         }
     }
