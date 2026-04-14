@@ -94,12 +94,12 @@ impl SchemaEntry {
                 }
             }
             SchemaValueType::Json => {
-                if serde_json::from_str::<serde_json::Value>(value.trim_matches('\'')).is_err() {
+                if serde_json::from_str::<serde_json::Value>(value.trim_matches(|c| c == '\'' || c == '"')).is_err() {
                     return ValidateResult::Invalid(SchemaValueType::Json);
                 }
             }
             SchemaValueType::Uuid => {
-                if uuid::Uuid::parse_str(value).is_err() {
+                if uuid::Uuid::parse_str(value.trim_matches(|c| c == '\'' || c == '"')).is_err() {
                     return ValidateResult::Invalid(SchemaValueType::Uuid);
                 }
             }
