@@ -35,6 +35,8 @@ pub enum SchemaValueType {
     Boolean,
     Url,
     Email,
+    Json,
+    Uuid
 }
 
 impl DotEnvSchema {
@@ -89,6 +91,16 @@ impl SchemaEntry {
             SchemaValueType::Url => {
                 if url::Url::parse(value).is_err() {
                     return ValidateResult::Invalid(SchemaValueType::Url);
+                }
+            }
+            SchemaValueType::Json => {
+                if serde_json::from_str::<serde_json::Value>(value.trim_matches('\'')).is_err() {
+                    return ValidateResult::Invalid(SchemaValueType::Json);
+                }
+            }
+            SchemaValueType::Uuid => {
+                if uuid::Uuid::parse_str(value).is_err() {
+                    return ValidateResult::Invalid(SchemaValueType::Uuid);
                 }
             }
         }

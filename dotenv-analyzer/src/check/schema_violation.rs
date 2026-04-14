@@ -65,6 +65,12 @@ impl Check for SchemaViolationChecker<'_> {
             SchemaValueType::Email => {
                 format!("The {key} key is not a valid email address")
             }
+            SchemaValueType::Json => {
+                format!("The {key} key is not valid JSON")
+            }
+            SchemaValueType::Uuid => {
+                format!("The {key} key is not a valid UUID")
+            }
         };
 
         Some(Warning::new(line.number, self.name(), message))
